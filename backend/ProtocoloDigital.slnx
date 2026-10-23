@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ProtocoloDigital.Core/ProtocoloDigital.Core.csproj" />
+    <Project Path="src/ProtocoloDigital.Functions/ProtocoloDigital.Functions.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ProtocoloDigital.Testes/ProtocoloDigital.Testes.csproj" />
+  </Folder>
+</Solution>

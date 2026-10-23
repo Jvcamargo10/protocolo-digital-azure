@@ -1,0 +1,11 @@
+bin/
+obj/
+*.user
+.vs/
+local.settings.json
+build.log
+node_modules/
+dist/
+__azurite*
+__blobstorage__/
+__queuestorage__/

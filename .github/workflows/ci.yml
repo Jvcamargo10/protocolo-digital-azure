@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Back-end (.NET + Azurite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with: { dotnet-version: 10.0.x }
+      - uses: actions/setup-node@v5
+        with: { node-version: 22 }
+      - name: Subir o Azurite (emulador de Blob e Table)
+        run: |
+          npx --yes azurite@3 --silent --skipApiVersionCheck --location /tmp/azurite &
+          for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/10002) 2>/dev/null && break; sleep 1; done
+      - name: Compilar e testar
+        run: dotnet test backend/ProtocoloDigital.slnx --logger "console;verbosity=normal" 2>&1 | tee build.log; test "${PIPESTATUS[0]}" -eq 0
+      - name: Resumo da falha
+        if: failure()
+        run: |
+          grep -E "error|Failed|Assert|Exception|Expected|Actual" build.log | grep -v "warning" | head -60 \
+            | python3 -c "import sys; print('::error title=Falha no build::' + sys.stdin.read().replace('%','%25').replace('\r','').replace('\n','%0A'))"
+
+  infra:
+    name: Bicep (build + lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: az bicep install && az bicep build --file infra/main.bicep --stdout > /dev/null
+
+  frontend:
+    name: Front-end (React)
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: frontend }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with: { node-version: 22, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:demo
+      - uses: actions/upload-pages-artifact@v4
+        with: { path: frontend/dist }
+
+  deploy:
+    name: Publicar demo no GitHub Pages
+    if: github.ref == 'refs/heads/main'
+    needs: [backend, infra, frontend]
+    runs-on: ubuntu-latest
+    permissions: { pages: write, id-token: write }
+    environment: { name: github-pages, url: "${{ steps.deploy.outputs.page_url }}" }
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
