@@ -28,6 +28,8 @@ jobs:
           for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/10002) 2>/dev/null && break; sleep 1; done
       - name: Compilar e testar
         run: dotnet test backend/ProtocoloDigital.slnx --logger "console;verbosity=normal" 2>&1 | tee build.log; test "${PIPESTATUS[0]}" -eq 0
+      - name: Resumo dos testes
+        run: grep -E "(Passed|Failed)! " build.log | sed 's/^/::notice title=Testes::/'
       - name: Resumo da falha
         if: failure()
         run: |
