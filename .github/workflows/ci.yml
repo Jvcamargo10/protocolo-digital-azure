@@ -29,7 +29,7 @@ jobs:
       - name: Compilar e testar
         run: dotnet test backend/ProtocoloDigital.slnx --logger "console;verbosity=normal" 2>&1 | tee build.log; test "${PIPESTATUS[0]}" -eq 0
       - name: Resumo dos testes
-        run: grep -E "(Passed|Failed)! " build.log | sed 's/^/::notice title=Testes::/'
+        run: grep -iE "passed!|failed!|summary|total" build.log | tail -5 | sed "s/^/::notice title=Testes::/"
       - name: Resumo da falha
         if: failure()
         run: |
